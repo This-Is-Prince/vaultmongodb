@@ -1,4 +1,4 @@
-import { MongoClient, ObjectId } from "mongodb";
+import { Filter, MongoClient, ObjectId } from "mongodb";
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -48,8 +48,9 @@ async function insertOne(run: boolean) {
 interface Product {
     _id?: ObjectId;
     name: string;
-    category: string;
+    category?: string;
     price: number;
+    tags?: string[];
 }
 
 async function insertMany(run: boolean) {
@@ -263,6 +264,503 @@ async function deleteMany(run: boolean) {
     }
 }
 
+async function cursor(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const deleteResult = await products.deleteMany({});
+        console.log(`Delete Result:-`, deleteResult);
+
+        // Create an array of 10 sample products
+        const sampleProducts: Product[] = Array.from({ length: 10 }, (_, i) => ({
+            name: `Product ${i + 1}`,
+            category: `Category ${i % 2}`,
+            price: (i + 1) * 10,
+        }));
+
+        const insertResult = await products.insertMany(sampleProducts);
+        console.log('Insert Result:-', insertResult);
+
+        console.log("✅ Inserted 10 sample products.");
+
+        console.log("\n iterating through products with a cursor:");
+        const cursor = products.find({});
+
+        for await (let doc of cursor) {
+            console.log(doc);
+        }
+    } catch (error) {
+        console.error("🔥 Operation failed", error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function comparisonOperator(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const query = { price: { $gt: 70 } }
+        const result = await products.find(query).toArray();
+        console.log(result);
+
+    } catch (error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function logicalOperator(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const queryOr = {
+            $or: [
+                { price: { $lt: 30 } },
+                { price: { $gte: 90 } },
+            ]
+        }
+
+        const queryAnd = {
+            $or: [
+                { price: { $lte: 30 } },
+                { price: { $gte: 90 } },
+            ],
+            $and: [
+                { price: { $lte: 50 } },
+                { name: 'Product 3' },
+            ],
+        }
+        const result = await products.find(queryAnd).toArray();
+        console.log(result);
+
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function arrayOperator(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+        // Let's create some new sample data with tags
+        // await products.deleteMany({});
+        // await products.insertMany([
+        //     { name: "Laptop", price: 1200, tags: ["tech", "electronics", "gift"] },
+        //     { name: "Headphones", price: 150, tags: ["tech", "audio"] },
+        //     { name: "Coffee Maker", price: 80, tags: ["kitchen", "home", "gift"] },
+        //     { name: "Book", price: 20, tags: ["reading"] }
+        // ]);
+        console.log("✅ Inserted new sample data.");
+
+        const queryIn = {
+            name: { $in: ["Book", "Laptop"] }
+        }
+        const queryAll = {
+            tags: { $all: ["tech", "gift"] }
+        }
+        const querySize = {
+            tags: { $size: 2 }
+        }
+        const result = await products.find(querySize).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function elementOperator(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const queryExists = {
+            name: { $exists: true }
+        }
+        const queryType: Filter<Product> = {
+            name: { $type: 'string' }
+        }
+        const result = await products.find(queryType).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function projectionOperator(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const query = {
+            $and: [
+                { price: { $lte: 50 } },
+                { category: "Category 1" },
+            ]
+        }
+        const result = await products.find(query).project({ _id: 0, price: 1, category: 1 }).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function index(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const result = await products.createIndex({ price: 1 });
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function compoundIndex(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const result = await products.createIndex({ category: 1, price: -1 });
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function explain(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const products = database.collection<Product>("products");
+
+        const query = {
+            name: "one"
+        };
+        const result = await products.find(query).explain();
+        console.log(result.queryPlanner.winningPlan);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function matchAggregation(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        // Insert our new student data
+        await students.deleteMany({});
+        await students.insertMany([
+            { name: "Ravi", class: "5A", subject: "Math", score: 85 },
+            { name: "Priya", class: "5A", subject: "Math", score: 92 },
+            { name: "Ravi", class: "5A", subject: "Science", score: 78 },
+            { name: "Priya", class: "5A", subject: "Science", score: 95 },
+            { name: "Amit", class: "5B", subject: "Math", score: 88 },
+            { name: "Sunita", class: "5B", subject: "Math", score: 72 },
+            { name: "Amit", class: "5B", subject: "Science", score: 90 },
+            { name: "Sunita", class: "5B", subject: "Science", score: 68 }
+        ]);
+        console.log("✅ Inserted student data.");
+
+        const pipeline = [
+            {
+                $match: { subject: "Math" }
+            }
+        ];
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function matchAggregation2(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        const pipeline = [
+            {
+                $match: { class: "5A", score: { $gt: 90 } }
+            }
+        ];
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function groupAggregationAvg(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        const pipeline = [
+            {
+                $group: {
+                    _id: "$subject",
+                    averageScore: { $avg: "$score" }
+                }
+            }
+        ];
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function groupAggregationSum(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        const pipeline = [
+            {
+                $group: {
+                    _id: "$subject",
+                    sum: { $sum: "$score" }
+                }
+            }
+        ];
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function groupAggregationMax(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        const pipeline = [
+            {
+                $group: {
+                    _id: "$subject",
+                    maxScore: { $max: "$score" }
+                }
+            }
+        ];
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function projectAggregation(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        const pipeline = [
+            {
+                $group: {
+                    _id: "$subject",
+                    averageScore: { $avg: "$score" }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    subject: "$_id",
+                    averageScore: 1
+                }
+            }
+        ];
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function projectAggregationTest(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        const pipeline = [
+            {
+                $group: {
+                    _id: "$subject",
+                    averageScore: { $avg: "$score" }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    subject: "$_id",
+                    averageScore: 1,
+                    status: "Completed"
+                }
+            }
+        ];
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function sortLimitSkipAggregation(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    try {
+        await client.connect();
+        const database = client.db("myFirstDatabase");
+        const students = database.collection("students");
+
+        const pipeline = [
+            {
+                $group: {
+                    _id: "$name",
+                    averageScore: { $avg: "$score" }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    name: "$_id",
+                    averageScore: 1
+                }
+            },
+            {
+                $sort: {
+                    averageScore: -1
+                }
+            },
+            {
+                $limit: 3
+            }
+        ]
+        const result = await students.aggregate(pipeline).toArray();
+        console.log(result);
+    } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
 // Chapter-1
 insertOne(false);
 
@@ -285,4 +783,55 @@ updateMany(false);
 deleteOne(false);
 
 // Chapter-8
-deleteMany(true);
+deleteMany(false);
+
+// Chapter-9
+cursor(false);
+
+// Chapter-10
+comparisonOperator(false);
+
+// Chapter-11
+logicalOperator(false);
+
+// Chapter-12
+arrayOperator(false);
+
+// Chapter-13
+elementOperator(false);
+
+// Chapter-14
+projectionOperator(false);
+
+// Chapter-15
+index(false);
+
+// Chapter-16
+compoundIndex(false);
+
+// Chapter-17
+explain(false);
+
+// Chapter-18
+matchAggregation(false);
+
+// Chapter-20
+matchAggregation2(false);
+
+// Chapter-21
+groupAggregationAvg(false);
+
+// Chapter-22
+groupAggregationSum(false);
+
+// Chapter-23
+groupAggregationMax(false);
+
+// Chapter-24
+projectAggregation(false);
+
+// Chapter-25
+projectAggregationTest(false);
+
+// Chapter-26
+sortLimitSkipAggregation(true);
