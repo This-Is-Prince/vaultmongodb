@@ -752,9 +752,127 @@ async function sortLimitSkipAggregation(run: boolean) {
                 $limit: 3
             }
         ]
+        const group = [
+            {
+                _id: "jagmeet",
+                averageScore: "70",
+            },
+            {
+                _id: "jasmeet",
+                averageScore: "60",
+            },
+            {
+                _id: "monu",
+                averageScore: "30",
+            },
+            {
+                _id: "sonu",
+                averageScore: "40",
+            },
+        ]
+        const groupAfterProject = [
+            {
+                name: "jagmeet",
+                averageScore: "70",
+            },
+            {
+                name: "jasmeet",
+                averageScore: "60",
+            },
+            {
+                name: "monu",
+                averageScore: "30",
+            },
+            {
+                name: "sonu",
+                averageScore: "40",
+            },
+        ];
+        const groupAfterSort = [
+            {
+                name: "jagmeet",
+                averageScore: "70",
+            },
+            {
+                name: "jasmeet",
+                averageScore: "60",
+            },
+            {
+                name: "sonu",
+                averageScore: "40",
+            },
+            {
+                name: "monu",
+                averageScore: "30",
+            },
+        ];
+        const groupAfterLimit = [
+            {
+                name: "jagmeet",
+                averageScore: "70",
+            },
+            {
+                name: "jasmeet",
+                averageScore: "60",
+            },
+            {
+                name: "sonu",
+                averageScore: "40",
+            },
+        ]
         const result = await students.aggregate(pipeline).toArray();
         console.log(result);
     } catch(error) {
+        console.log(error);
+    } finally {
+        await client.close();
+    }
+}
+
+async function transaction(run: boolean) {
+    if (!run) {
+        return;
+    }
+
+    const session = client.startSession();
+
+    try {
+        await client.connect();
+        const accounts = client.db("myFirstDatabase").collection("accounts");
+
+        // Prepare some sample accounts
+        await accounts.deleteMany({});
+        await accounts.insertMany([
+            { name: "Account A", balance: 500 },
+            { name: "Account B", balance: 1000 }
+        ]);
+        console.log("✅ Prepared sample accounts.");
+
+        const initialAccounts = await accounts.find({}).toArray();
+        console.log("\nInitial balances:", initialAccounts);
+
+        const result = await session.withTransaction(async (session) => {
+            console.log("All transactions start");
+
+            const amount = 100;
+            const sender = "Account A";
+            const receiver = "Account B";
+
+            const senderResult = await accounts.updateOne({ name: sender }, { $inc: { balance: -amount } }, { session });
+            console.log(`Sender result->`, senderResult);
+
+            const receiverResult = await accounts.updateOne({ name: receiver }, { $inc: { balance: amount } }, { session });
+            console.log(`Receiver result->`, receiverResult);
+            
+            console.log('All transactions done');
+        })
+
+        console.log("Final Transactions result->", result);
+        
+        // Let's check the final balances
+        const finalAccounts = await accounts.find({}).toArray();
+        console.log("\nFinal balances:", finalAccounts);
+    } catch (error) {
         console.log(error);
     } finally {
         await client.close();
@@ -834,4 +952,7 @@ projectAggregation(false);
 projectAggregationTest(false);
 
 // Chapter-26
-sortLimitSkipAggregation(true);
+sortLimitSkipAggregation(false);
+
+// Chapter-26
+transaction(true);
