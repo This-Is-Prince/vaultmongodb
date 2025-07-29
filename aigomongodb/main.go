@@ -49,4 +49,6 @@ func main() {
 	}
 
 	fmt.Println("Successfully connected to MongoDB Atlas!")
+
+	Insert(true, ctx, client)
 }
