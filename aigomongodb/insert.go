@@ -12,6 +12,7 @@ type Student struct {
 	Name    string `bson:"name"`
 	Age     int    `bson:"age"`
 	College string `bson:"college"`
+	Status  string `bson:"status,omitempty"`
 }
 
 func Insert(run bool, ctx context.Context, client *mongo.Client) {
