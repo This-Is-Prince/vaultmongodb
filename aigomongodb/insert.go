@@ -19,7 +19,7 @@ func Insert(run bool, ctx context.Context, client *mongo.Client) {
 		return
 	}
 
-	col := client.Database("university").Collection("students_go")
+	col := client.Database("university").Collection("students")
 
 	// --- INSERT ONE DOCUMENT ---
 	fmt.Println("\n--- Inserting one student ---")
