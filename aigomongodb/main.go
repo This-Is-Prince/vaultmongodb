@@ -53,5 +53,6 @@ func main() {
 	Insert(false, ctx, client)
 	Read(false, ctx, client)
 	Update(false, ctx, client)
-	Delete(true, ctx, client)
+	Delete(false, ctx, client)
+	Cursor(true, ctx, client)
 }
