@@ -50,6 +50,8 @@ func main() {
 
 	fmt.Println("Successfully connected to MongoDB Atlas!")
 
-	Insert(true, ctx, client)
-	Read(true, ctx, client)
+	Insert(false, ctx, client)
+	Read(false, ctx, client)
+	Update(false, ctx, client)
+	Delete(true, ctx, client)
 }
