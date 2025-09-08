@@ -1,5 +1,6 @@
 import { Filter, MongoClient, ObjectId } from "mongodb";
 import dotenv from 'dotenv';
+import { searchIndexes } from "./search-indexes.js";
 
 dotenv.config();
 
@@ -955,4 +956,7 @@ projectAggregationTest(false);
 sortLimitSkipAggregation(false);
 
 // Chapter-26
-transaction(true);
+transaction(false);
+
+// Chapter-27 (Important)
+searchIndexes(true, client);
